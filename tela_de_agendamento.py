@@ -19,7 +19,7 @@ class tela_de_agendamento:
         botao_agendamento = customtkinter.CTkButton(janela_agendamento, text = 'Agendar', width=200, height=50, command=self.click_agendar)
         botao_agendamento.place(relx = 0.7, rely = 0.15)
         
-        botao_avisar = customtkinter.CTkButton(janela_agendamento, text = 'Avisar clientes', width=200, height=50, command=self.click_avisar)
+        botao_avisar = customtkinter.CTkButton(janela_agendamento, text = 'Avisar clientes', width=200, height=50, command=self.tela_aviso)
         botao_avisar.place(relx = 0.7, rely = 0.30)
         
         botao_ver_lista_do_dia = customtkinter.CTkButton(janela_agendamento, text= 'Agendados do dia', width=200, height=50, command=self.click_agendados_do_dia)
@@ -28,7 +28,7 @@ class tela_de_agendamento:
         botao_busca_agendamento = customtkinter.CTkButton(janela_agendamento, text ='Buscar agendamentos', width=200, height=50, command=self.click_buscar_agendamentos)
         botao_busca_agendamento.place(relx = 0.7, rely = 0.60)
         
-        botao_sair = customtkinter.CTkButton(janela_agendamento, text='Sair', width=50, height=10, fg_color='red')
+        botao_sair = customtkinter.CTkButton(janela_agendamento, text='Sair', width=50, height=10, fg_color='red',command=lambda:self.click_sair(janela_agendamento))
         botao_sair.place(relx = 0.89, rely = 0.03)
         
         botao_excluir = customtkinter.CTkButton(janela_agendamento, text ='Excluir agendamento', width=200, height=50, command=self.click_excluir)
@@ -62,8 +62,18 @@ class tela_de_agendamento:
             planilha[f'C{proxima_linha}'] = horario
             planilha[f'D{proxima_linha}'] = self.corrige_telefone(telefone)
             
-            workbook.save('agendamentos.xlsx')
-            
+            try:
+                workbook.save('agendamentos.xlsx')
+                texto = customtkinter.CTkLabel(janela_agendar,text="Agendamento realizado com sucesso",text_color="yellow")
+                texto.pack(padx = 10, pady = 10)
+            except FileNotFoundError:
+                texto = customtkinter.CTkLabel(janela_agendar, text="Não foi possível agendar, banco de dados não encontrado", text_color='yellow')
+                texto.pack(padx = 10, pady = 10)
+            except PermissionError:
+                texto = customtkinter.CTkLabel(janela_agendar, text="Não foi possível agendar, sem permissão para acessar o banco de dados", text_color='yellow')
+            except Exception as e:
+                texto = customtkinter.CTkLabel(janela_agendar, text="Não foi possível agendar, erro inesperado: {}".format(e), text_color='yellow')
+                            
             
         janela_agendar = customtkinter.CTk()
         janela_agendar.geometry('500x300')
@@ -88,12 +98,8 @@ class tela_de_agendamento:
         janela_agendar.mainloop()
         
     def click_buscar_agendamentos(self):
-        def limpar_janela():
-            for widget in janela.winfo_children():
-                widget.destroy()
-        
         def buscar():
-            
+            encontrado = False
             nome_digitado_maiusculo = campo_nome.get().upper()
 
             workbook = openpyxl.load_workbook('agendamentos.xlsx')
@@ -112,6 +118,10 @@ class tela_de_agendamento:
                     
                     informacoes = customtkinter.CTkLabel(janela, text=info_agendamento)
                     informacoes.pack(padx = 10, pady = 10)
+                    encontrado = True
+            if not encontrado:
+                texto = customtkinter.CTkLabel(janela,text="Nenhum agendamento encontrado", text_color="yellow")
+                texto.pack(padx = 10, pady = 10)
 
         janela = customtkinter.CTk()
         janela.geometry('500x300')        
@@ -120,12 +130,13 @@ class tela_de_agendamento:
         botao_procurar = customtkinter.CTkButton(janela, text='Buscar',command=buscar)
         botao_procurar.pack(padx = 10, pady = 10)
         
-        
         janela.mainloop()
     
     def click_agendados_do_dia(self):
+        encontrado = 0
         janela = customtkinter.CTk()
         janela.geometry("500x300")
+        janela.title("Lista")
         
         data_de_hoje = datetime.now()
         data_de_hoje = str(data_de_hoje.strftime('%d/%m/%Y'))
@@ -144,9 +155,13 @@ class tela_de_agendamento:
         
         for linha in planilha.iter_rows(min_row=2, values_only=True):
             if linha[1] == data_de_hoje:
+                encontrado += 1
                 dados = self.capitalizar_nome(str(linha[0])) + '\t' + str(linha[1]) + ' ' + str(linha[2]) + '\t' + str(linha[3])
                 cliente = customtkinter.CTkLabel(label, text=dados)
                 cliente.pack(padx = 10, pady = 10)
+        if encontrado == 0:
+            texto_sem_agendamentos = customtkinter.CTkLabel(label, text='Sem agendamentos para hoje')
+            texto_sem_agendamentos.pack(padx = 10, pady = 10)
         janela.mainloop()
     
     def capitalizar_nome(self, nome):
@@ -160,7 +175,8 @@ class tela_de_agendamento:
             i += 1
         return str(nome_capitalizado)
     
-    def click_avisar(self):
+    def click_avisar(self,janela_anterior):
+        self.click_sair(janela_anterior)
         workbook = openpyxl.load_workbook('agendamentos.xlsx')
         planilha = workbook['Sheet1']
      
@@ -178,24 +194,27 @@ class tela_de_agendamento:
     
     def bot_wpp(self, nome, horario_agendamento, telefone):
 
-
-        agora = datetime.now()
-        hora = agora.hour
-        dia = agora.date()
-        dia_formatado = str(dia)
-    
-        if hora < 12:
-            mensagem = 'Bom dia, {}!\nGostaríamos de lembrar de seu horário agendado para hoje às {}'.format(nome, horario_agendamento)
-        else:
-            mensagem = 'Boa tarde, {}!\nGostaríamos de lembrar de seu horário agendado para hoje às {}'.format(nome, horario_agendamento)
-        link = f'https://web.whatsapp.com/send?phone={telefone}&text={quote(mensagem)}'
-        webbrowser.open(link)
-        sleep(15)
-        seta = pyautogui.locateCenterOnScreen('seta.png')
-        sleep(2)
-        pyautogui.click(seta[0], seta[1])
-        sleep(2)
-        pyautogui.hotkey('ctrl','w')
+        try:
+            agora = datetime.now()
+            hora = agora.hour
+            dia = agora.date()
+            dia_formatado = str(dia)
+        
+            if hora < 12:
+                mensagem = 'Bom dia, {}!\nGostaríamos de lembrar de seu horário agendado para hoje às {}'.format(nome, horario_agendamento)
+            else:
+                mensagem = 'Boa tarde, {}!\nGostaríamos de lembrar de seu horário agendado para hoje às {}'.format(nome, horario_agendamento)
+            link = f'https://web.whatsapp.com/send?phone={telefone}&text={quote(mensagem)}'
+            webbrowser.open(link)
+            sleep(15)
+            seta = pyautogui.locateCenterOnScreen('seta.png')
+            sleep(2)
+            pyautogui.click(seta[0], seta[1])
+            sleep(2)
+            pyautogui.hotkey('ctrl','w')
+            self.operacao_concluida()
+        except Exception as e:
+            self.tela_erro(e)
         
     def click_excluir(self):
         janela = customtkinter.CTk()
@@ -225,21 +244,44 @@ class tela_de_agendamento:
     def tela_aviso(self):
         janela = customtkinter.CTk()
         janela.geometry("600x200")
+        janela.title("Aviso")
         
         texto_atencao = customtkinter.CTkLabel(janela, text='ATENÇÃO', bg_color='transparent', text_color="yellow")
         texto_atencao.pack(padx = 10, pady = 10)
         texto = customtkinter.CTkLabel(janela, text='Esta opção controla o mouse e o teclado de seu computador\nPor isso, não use-os enquanto a ação não terminar ou poderá acarretar erros no programa\nCertifique-se ainda de que seu whatsapp web esteja logado neste computador')
         texto.pack(padx = 10, pady = 10)
         
-        botao_continuar = customtkinter.CTkButton(janela, text='Continuar', command=self.bot_wpp)
+        botao_continuar = customtkinter.CTkButton(janela, text='Continuar', command=lambda:self.click_avisar(janela))
         botao_continuar.pack(padx = 10, pady = 30)
         janela.mainloop()
+    
+    def click_sair(self, janela):
+        janela.destroy()
+    
+    def limpar_janela(self,janela):
+        for widget in janela.winfo_children():
+            widget.destroy()
 
-
+    def operacao_concluida(self):
+        janela = customtkinter.CTk()
+        janela.geometry('300x100')
+        janela.title('Aviso')
+        
+        texto = customtkinter.CTkLabel(janela, text="Operação concluída com sucesso", text_color="yellow")
+        texto.pack(padx = 10, pady = 10)
+        
+        janela.mainloop()
+    
+    def tela_erro(self, e):
+        janela = customtkinter.CTk()
+        janela.geometry('300x300')
+        janela.title('Erro')
+        
+        texto = customtkinter.CTkLabel(janela, text="Operação não concluída, erro inesperado {}".format(e), text_color="yellow")
+        texto.pack(padx = 10, pady = 10)
         
         
-        
 
-#tela = tela_de_agendamento()
-#tela.main()
+tela = tela_de_agendamento()
+tela.main()
 #tela.tela_aviso()

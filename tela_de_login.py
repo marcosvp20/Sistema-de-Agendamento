@@ -68,7 +68,7 @@ class tela_de_login:
         if usuario == dados[0] and senha == dados[1]:
             #janela_bem_vindo()
             tela = tela_de_agendamento()
-            tela.main()
+            tela.main(janela)
         
         else:
             texto_senha_incorreta = customtkinter.CTkLabel(janela, text='Usuário ou senha incorretos', text_color='red')
@@ -95,7 +95,5 @@ class tela_de_login:
         botao_esqueci_senha = customtkinter.CTkButton(janela, text='Esqueci minha senha', fg_color='transparent',command=self.click_esqueci_senha)
         botao_esqueci_senha.pack(padx = 5, pady = 5)
         janela.mainloop()
-
-tela = tela_de_login()
-tela.main()        
+   
             

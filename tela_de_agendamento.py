@@ -12,7 +12,8 @@ class tela_de_agendamento:
     def __init__(self):
         pass
     
-    def main(self):
+    def main(self, janela_anterior):
+        self.click_sair(janela_anterior)
         janela_agendamento = customtkinter.CTk()
         janela_agendamento.geometry('800x600')
         janela_agendamento.title('Agendamento')
@@ -221,13 +222,17 @@ class tela_de_agendamento:
         janela.geometry('500x300')        
         campo_nome = customtkinter.CTkEntry(janela, placeholder_text='Excluir')
         campo_nome.pack(padx = 10, pady = 10)
-        botao_procurar = customtkinter.CTkButton(janela, text='Excluir', command=lambda:self.excluir(str(campo_nome.get())))
+        botao_procurar = customtkinter.CTkButton(janela, text='Excluir', command=lambda:self.excluir(str(campo_nome.get()),janela))
         botao_procurar.pack(padx = 10, pady = 10)
         janela.mainloop()
     
-    def excluir(self, nome_digitado):
-        workbook = openpyxl.load_workbook('agendamentos.xlsx')
-        planilha = workbook['Sheet1']
+    def excluir(self, nome_digitado, janela):
+        try:
+            workbook = openpyxl.load_workbook('agendamentos.xlsx')
+            planilha = workbook['Sheet1']
+        except Exception as e:
+            self.tela_erro(e)
+        encontrado = False
         
         row = 2
         for linha in planilha.iter_rows(min_row=2, values_only=True):
@@ -238,7 +243,11 @@ class tela_de_agendamento:
             if nome_planilha == nome_digitado:
                 print('Aqui')
                 planilha.delete_rows(row)
+                encontrado = True
             row += 1
+        if not encontrado:
+            texto = customtkinter.CTkLabel(janela,text='Não foram encontrados clientes', text_color='yellow')
+            texto.pack(padx = 10, pady = 10)
         workbook.save('agendamentos.xlsx')
         
     def tela_aviso(self):
@@ -268,20 +277,21 @@ class tela_de_agendamento:
         janela.title('Aviso')
         
         texto = customtkinter.CTkLabel(janela, text="Operação concluída com sucesso", text_color="yellow")
-        texto.pack(padx = 10, pady = 10)
+        texto.pack(anchor = 'center',fill='both', expand = True)
         
         janela.mainloop()
     
     def tela_erro(self, e):
         janela = customtkinter.CTk()
-        janela.geometry('300x300')
+        janela.geometry('300x100')
         janela.title('Erro')
         
-        texto = customtkinter.CTkLabel(janela, text="Operação não concluída, erro inesperado {}".format(e), text_color="yellow")
-        texto.pack(padx = 10, pady = 10)
+        texto = customtkinter.CTkLabel(janela, text="Operação não concluída, erro inesperado:\n {}".format(e), text_color="yellow")
+        texto.pack(anchor = 'center',fill='both', expand = True)
         
-        
-
-tela = tela_de_agendamento()
-tela.main()
-#tela.tela_aviso()
+        janela.mainloop() 
+'''try:
+    tela = tela_de_agendamento()
+    tela.main()
+except Exception as e:
+    tela.tela_erro(e)'''

@@ -67,8 +67,11 @@ class tela_de_login:
         print(dados[1])
         if usuario == dados[0] and senha == dados[1]:
             #janela_bem_vindo()
-            tela = tela_de_agendamento()
-            tela.main(janela)
+            try:
+                tela = tela_de_agendamento()
+                tela.main(janela)
+            except Exception as e:
+                tela.tela_erro(e)
         
         else:
             texto_senha_incorreta = customtkinter.CTkLabel(janela, text='Usuário ou senha incorretos', text_color='red')

@@ -1,5 +1,4 @@
 import customtkinter
-import tkinter
 from PIL import Image, ImageTk
 import openpyxl
 from datetime import datetime
@@ -7,6 +6,7 @@ import pyautogui
 import webbrowser
 from urllib.parse import quote
 from time import sleep
+from cadastro import cadastro
 
 class tela_de_agendamento:
     def __init__(self):
@@ -15,31 +15,29 @@ class tela_de_agendamento:
     def main(self, janela_anterior):
         self.click_sair(janela_anterior)
         janela_agendamento = customtkinter.CTk()
-        janela_agendamento.geometry('800x600')
+        janela_agendamento.geometry('500x300')
         janela_agendamento.title('Agendamento')
-        botao_agendamento = customtkinter.CTkButton(janela_agendamento, text = 'Agendar', width=200, height=50, command=self.click_agendar)
-        botao_agendamento.place(relx = 0.7, rely = 0.15)
+        botao_agendamento = customtkinter.CTkButton(janela_agendamento, text = 'Agendar', width=100, height=100, command=self.click_agendar)
+        botao_agendamento.place(relx = 0.075, rely = 0.15)
         
-        botao_avisar = customtkinter.CTkButton(janela_agendamento, text = 'Avisar clientes', width=200, height=50, command=self.tela_aviso)
-        botao_avisar.place(relx = 0.7, rely = 0.30)
         
-        botao_ver_lista_do_dia = customtkinter.CTkButton(janela_agendamento, text= 'Agendados do dia', width=200, height=50, command=self.click_agendados_do_dia)
-        botao_ver_lista_do_dia.place(relx = 0.7, rely = 0.45)
+        botao_avisar = customtkinter.CTkButton(janela_agendamento, text = 'Avisar clientes', width=100, height=100, command=self.tela_aviso)
+        botao_avisar.place(relx = 0.390, rely = 0.15)
         
-        botao_busca_agendamento = customtkinter.CTkButton(janela_agendamento, text ='Buscar agendamentos', width=200, height=50, command=self.click_buscar_agendamentos)
-        botao_busca_agendamento.place(relx = 0.7, rely = 0.60)
+        botao_ver_lista_do_dia = customtkinter.CTkButton(janela_agendamento, text= 'Agendados\ndo dia', width=100, height=100, command=self.click_agendados_do_dia,anchor='center')
+        botao_ver_lista_do_dia.place(relx = 0.725, rely = 0.15)
+        
+        botao_busca_agendamento = customtkinter.CTkButton(janela_agendamento, text ='Buscar\nagendamentos', width=100, height=100, command=self.click_buscar_agendamentos)
+        botao_busca_agendamento.place(relx = 0.075, rely = 0.60)
         
         botao_sair = customtkinter.CTkButton(janela_agendamento, text='Sair', width=50, height=10, fg_color='red',command=lambda:self.click_sair(janela_agendamento))
-        botao_sair.place(relx = 0.89, rely = 0.03)
+        botao_sair.place(relx = 0.825, rely = 0.03)
         
-        botao_excluir = customtkinter.CTkButton(janela_agendamento, text ='Excluir agendamento', width=200, height=50, command=self.click_excluir)
-        botao_excluir.place(relx = 0.7, rely = 0.75)
+        botao_excluir = customtkinter.CTkButton(janela_agendamento, text ='Excluir\nagendamento', width=100, height=100, command=self.click_excluir)
+        botao_excluir.place(relx = 0.390, rely = 0.60)
         
-        proximos_agendamentos = customtkinter.CTkScrollableFrame(janela_agendamento, width= 500, height= 500)
-        proximos_agendamentos.place(relx = 0.025, rely = 0.1)
-        
-        titulo_agendamentos = customtkinter.CTkLabel(janela_agendamento, text= 'Próximos agendamentos')
-        titulo_agendamentos.place(relx = 0.25, rely = 0.025)
+        #botao_cadastrar_cliente = customtkinter.CTkButton(janela_agendamento, text="Cadastrar",width=200, height=50,command=cadastrar.click_cadastro)
+        #botao_cadastrar_cliente.place(relx = 0.725, rely = 0.30)
         
         janela_agendamento.mainloop()
     
@@ -55,26 +53,21 @@ class tela_de_agendamento:
             telefone = str(campo_telefone.get())
             print(nome, telefone, horario, data)
             
-            workbook = openpyxl.load_workbook('agendamentos.xlsx')
-            planilha = workbook['Sheet1']
-            proxima_linha = planilha.max_row + 1
-            planilha[f'A{proxima_linha}'] = nome
-            planilha[f'B{proxima_linha}'] = data
-            planilha[f'C{proxima_linha}'] = horario
-            planilha[f'D{proxima_linha}'] = self.corrige_telefone(telefone)
-            
             try:
+                workbook = openpyxl.load_workbook('agendamentos.xlsx')
+                planilha = workbook['Sheet1']
+                proxima_linha = planilha.max_row + 1
+                planilha[f'A{proxima_linha}'] = nome
+                planilha[f'B{proxima_linha}'] = data
+                planilha[f'C{proxima_linha}'] = horario
+                planilha[f'D{proxima_linha}'] = self.corrige_telefone(telefone)
+                
+            
                 workbook.save('agendamentos.xlsx')
                 texto = customtkinter.CTkLabel(janela_agendar,text="Agendamento realizado com sucesso",text_color="yellow")
                 texto.pack(padx = 10, pady = 10)
-            except FileNotFoundError:
-                texto = customtkinter.CTkLabel(janela_agendar, text="Não foi possível agendar, banco de dados não encontrado", text_color='yellow')
-                texto.pack(padx = 10, pady = 10)
-            except PermissionError:
-                texto = customtkinter.CTkLabel(janela_agendar, text="Não foi possível agendar, sem permissão para acessar o banco de dados", text_color='yellow')
             except Exception as e:
-                texto = customtkinter.CTkLabel(janela_agendar, text="Não foi possível agendar, erro inesperado: {}".format(e), text_color='yellow')
-                            
+                self.tela_erro(e)                            
             
         janela_agendar = customtkinter.CTk()
         janela_agendar.geometry('500x300')
@@ -130,7 +123,7 @@ class tela_de_agendamento:
         campo_nome.pack(padx = 10, pady = 10)
         botao_procurar = customtkinter.CTkButton(janela, text='Buscar',command=buscar)
         botao_procurar.pack(padx = 10, pady = 10)
-        
+    
         janela.mainloop()
     
     def click_agendados_do_dia(self):
@@ -290,8 +283,5 @@ class tela_de_agendamento:
         texto.pack(anchor = 'center',fill='both', expand = True)
         
         janela.mainloop() 
-'''try:
-    tela = tela_de_agendamento()
-    tela.main()
-except Exception as e:
-    tela.tela_erro(e)'''
+            
+        
